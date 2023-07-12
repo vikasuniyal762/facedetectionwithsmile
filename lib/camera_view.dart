@@ -66,37 +66,31 @@ class _CameraViewState extends State<CameraView> {
   }
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+
           actions: [
+      IconButton(
+      icon: Icon(Icons.switch_camera_rounded,),
+      onPressed: () {
+        _switchLiveCamera();
+      },
+    ),
             IconButton(
-              icon: Icon(Icons.switch_camera_rounded),
-              onPressed: _floatingActionButton,
-            ),
+              icon: Icon(Icons.camera_outlined,size: 35,color:Colors.white,),
+              onPressed: () {
+
+              },
+            )
           ]
       ),
       body: _body(),
+
+
+      //floatingActionButton: _floatingActionButton(),
     );
   }
-
-  Widget? _floatingActionButton() {
-    if (cameras.length == 1) return null;
-    return SizedBox(
-        height: 60.0,
-        width: 60.0,
-        child: FloatingActionButton(
-          onPressed: _switchLiveCamera,
-          child: Icon(
-            Platform.isIOS
-                ? Icons.flip_camera_ios_outlined
-                : Icons.flip_camera_ios_sharp,
-            size: 40,
-          ),
-        ));
-  }
-
   Widget _body() {
     return _liveFeedBody();
   }
@@ -171,38 +165,38 @@ class _CameraViewState extends State<CameraView> {
   }
 
 ///FRAME FUNCTIONALITY UNDER THIS CODE
-//   int count=0;
-//   void _processCameraImage(CameraImage image) {
-//     if (count == 2) {
-//       count = 0;
-//       return;
-//     }
-//
-//     final inputImage = _inputImageFromCameraImage(image);
-//     if (inputImage == null) return;
-//
-//     widget.onImage(inputImage);
-//     print('the frame is : ........................................................hiiiiiiiiiiii $count');
-//
-//     count++;
-//   }
-
-  int count = 0;
-
+  int count=0;
   void _processCameraImage(CameraImage image) {
-    count++;
-    if (count % 2 != 0) {
+    if (count == 2) {
+      count = 0;
       return;
     }
 
     final inputImage = _inputImageFromCameraImage(image);
-    if (inputImage! == null) {
-      return;
-    }
+    if (inputImage == null) return;
 
     widget.onImage(inputImage);
     print('the frame is : ........................................................hiiiiiiiiiiii $count');
+
+    count++;
   }
+
+  // int count = 0;
+
+  // void _processCameraImage(CameraImage image) {
+  //   count++;
+  //   if (count % 2 != 0) {
+  //     return;
+  //   }
+  //
+  //   final inputImage = _inputImageFromCameraImage(image);
+  //   if (inputImage! == null) {
+  //     return;
+  //   }
+  //
+  //   widget.onImage(inputImage);
+  //   print('the frame is : ........................................................hiiiiiiiiiiii $count');
+  // }
 
 
 
