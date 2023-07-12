@@ -64,33 +64,16 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
       print('Number of smiling faces: $numSmilingFaces');
      /// Additional code for detecting the state of the right and left eyes
 
-      // for (Face face in faces) {
-      //   if (face.rightEyeOpenProbability != null) {
-      //     String rightEyeState = face.rightEyeOpenProbability! > 0.5 ? 'Open' : 'Closed';
-      //     print('Right eye state: $rightEyeState');
-      //   }
-      //   if (face.leftEyeOpenProbability != null) {
-      //     String leftEyeState = face.leftEyeOpenProbability! > 0.5 ? 'Open' : 'Closed';
-      //     print('Left eye state: $leftEyeState');
-      //   }
-      // }
-
-      for (final face in faces) {
-        final leftEye = faces.getLandmark(FaceLandmarkType.leftEye);
-        final rightEye = faces.getLandmark(FaceLandmarkType.rightEye);
-
-        if (leftEye != null && rightEye != null) {
-          final leftEyeOpenProbability = face.leftEyeOpenProbability;
-          final rightEyeOpenProbability = face.rightEyeOpenProbability;
-
-          // Perform eye blink detection logic here
-          // You can calculate the eye aspect ratio using the eye landmarks
-          // and determine if the eyes are closed or open based on the probabilities
-
-          print('Left Eye Open Probability: $leftEyeOpenProbability');
-          print('Right Eye Open Probability: $rightEyeOpenProbability');
+      for (Face face in faces) {
+        if (face.rightEyeOpenProbability != null) {
+          String rightEyeState = face.rightEyeOpenProbability! > 0.5 ? 'Open' : 'Closed';
+          print('Right eye state: $rightEyeState');
         }
-
+        if (face.leftEyeOpenProbability != null) {
+          String leftEyeState = face.leftEyeOpenProbability! > 0.5 ? 'Open' : 'Closed';
+          print('Left eye state: $leftEyeState');
+        }
+      }
 
     } else {
       String text = 'Faces found: ${faces.length}\n\n';
