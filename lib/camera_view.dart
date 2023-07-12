@@ -1,20 +1,18 @@
 import 'dart:io';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../main.dart';
 
 class CameraView extends StatefulWidget {
-  CameraView(
-      {Key? key,
-        required this.title,
-        required this.customPaint,
-        required this.onImage,
-        this.initialDirection = CameraLensDirection.back})
-      : super(key: key);
+  CameraView({
+    Key? key,
+    required this.title,
+    required this.customPaint,
+    required this.onImage,
+    this.initialDirection = CameraLensDirection.back,
+  }) : super(key: key);
 
   final String title;
   final CustomPaint? customPaint;
@@ -26,7 +24,6 @@ class CameraView extends StatefulWidget {
 }
 
 class _CameraViewState extends State<CameraView> {
-
   CameraController? _controller;
   int _cameraIndex = -1;
   double zoomLevel = 0.0, minZoomLevel = 0.0, maxZoomLevel = 0.0;
@@ -35,62 +32,35 @@ class _CameraViewState extends State<CameraView> {
   @override
   void initState() {
     super.initState();
-    if (cameras.any(
-          (element) =>
-      element.lensDirection == widget.initialDirection &&
-          element.sensorOrientation == 90,
-    )) {
-      _cameraIndex = cameras.indexOf(
-        cameras.firstWhere((element) =>
-        element.lensDirection == widget.initialDirection &&
-            element.sensorOrientation == 90),
-      );
-    } else {
-      for (var i = 0; i < cameras.length; i++) {
-        if (cameras[i].lensDirection == widget.initialDirection) {
-          _cameraIndex = i;
-          break;
-        }
-      }
-    }
-
-    if (_cameraIndex != -1) {
-      _startLiveFeed();
-    } else {
-    }
+    _initializeCamera();
   }
+
   @override
   void dispose() {
     _stopLiveFeed();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-
-          actions: [
-      IconButton(
-      icon: Icon(Icons.switch_camera_rounded,),
-      onPressed: () {
-        _switchLiveCamera();
-      },
-    ),
-            IconButton(
-              icon: Icon(Icons.camera_outlined,size: 35,color:Colors.white,),
-              onPressed: () {
-
-              },
-            )
-          ]
+        actions: [
+          IconButton(
+            icon: Icon(Icons.switch_camera_rounded),
+            onPressed: _switchLiveCamera,
+          ),
+          IconButton(
+            icon: Icon(Icons.camera_outlined, size: 35, color: Colors.white),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: _body(),
-
-
-      //floatingActionButton: _floatingActionButton(),
     );
   }
+
   Widget _body() {
     return _liveFeedBody();
   }
@@ -123,39 +93,49 @@ class _CameraViewState extends State<CameraView> {
       ),
     );
   }
-  Future _startLiveFeed() async {
+
+  Future<void> _initializeCamera() async {
+    final camera = cameras.firstWhere(
+          (element) =>
+      element.lensDirection == widget.initialDirection &&
+          element.sensorOrientation == 90,
+      orElse: () => cameras.firstWhere(
+            (element) => element.lensDirection == widget.initialDirection,
+        orElse: () => cameras.first,
+      ),
+    );
+
+    _cameraIndex = cameras.indexOf(camera);
+    await _startLiveFeed();
+  }
+
+  Future<void> _startLiveFeed() async {
     final camera = cameras[_cameraIndex];
     _controller = CameraController(
       camera,
-      ResolutionPreset.high,
+      ResolutionPreset.max,
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid
           ? ImageFormatGroup.nv21
           : ImageFormatGroup.bgra8888,
     );
-    _controller?.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      _controller?.getMinZoomLevel().then((value) {
-        zoomLevel = value;
-        minZoomLevel = value;
-      });
-      _controller?.getMaxZoomLevel().then((value) {
-        maxZoomLevel = value;
-      });
-      _controller?.startImageStream(_processCameraImage);
-      setState(() {});
-    });
+
+    await _controller!.initialize();
+    zoomLevel = await _controller!.getMinZoomLevel();
+    minZoomLevel = zoomLevel;
+    maxZoomLevel = await _controller!.getMaxZoomLevel();
+
+    _controller!.startImageStream(_processCameraImage);
+    setState(() {});
   }
 
-  Future _stopLiveFeed() async {
+  Future<void> _stopLiveFeed() async {
     await _controller?.stopImageStream();
     await _controller?.dispose();
     _controller = null;
   }
 
-  Future _switchLiveCamera() async {
+  Future<void> _switchLiveCamera() async {
     setState(() => _changingCameraLens = true);
     _cameraIndex = (_cameraIndex + 1) % cameras.length;
 
@@ -164,66 +144,39 @@ class _CameraViewState extends State<CameraView> {
     setState(() => _changingCameraLens = false);
   }
 
-///FRAME FUNCTIONALITY UNDER THIS CODE
-  int count=0;
+
+  ///count the frames .....
+  int count = 0;
   void _processCameraImage(CameraImage image) {
-    if (count == 2) {
-      count = 0;
+    if (count % 2 != 0) {
+      count++;
       return;
     }
-
     final inputImage = _inputImageFromCameraImage(image);
     if (inputImage == null) return;
-
     widget.onImage(inputImage);
-    print('the frame is : ........................................................hiiiiiiiiiiii $count');
-
+    print('The frame is: $count');
     count++;
   }
 
-  // int count = 0;
-
-  // void _processCameraImage(CameraImage image) {
-  //   count++;
-  //   if (count % 2 != 0) {
-  //     return;
-  //   }
-  //
-  //   final inputImage = _inputImageFromCameraImage(image);
-  //   if (inputImage! == null) {
-  //     return;
-  //   }
-  //
-  //   widget.onImage(inputImage);
-  //   print('the frame is : ........................................................hiiiiiiiiiiii $count');
-  // }
-
-
-
-
   InputImage? _inputImageFromCameraImage(CameraImage image) {
-    // get camera rotation
     final camera = cameras[_cameraIndex];
-    final rotation =
-    InputImageRotationValue.fromRawValue(camera.sensorOrientation);
+    final rotation = InputImageRotationValue.fromRawValue(camera.sensorOrientation);
     if (rotation == null) return null;
 
-    // get image format
     final format = InputImageFormatValue.fromRawValue(image.format.raw);
     if (format == null ||
         (Platform.isAndroid && format != InputImageFormat.nv21) ||
         (Platform.isIOS && format != InputImageFormat.bgra8888)) return null;
-    if (image.planes.length != 1) return null;
-    final plane = image.planes.first;
 
-    // compose InputImage using bytes
+    final plane = image.planes.first;
     return InputImage.fromBytes(
       bytes: plane.bytes,
       metadata: InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: rotation, // used only in Android
-        format: format, // used only in iOS
-        bytesPerRow: plane.bytesPerRow, // used only in iOS
+        rotation: rotation,
+        format: format,
+        bytesPerRow: plane.bytesPerRow,
       ),
     );
   }
