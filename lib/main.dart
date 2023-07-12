@@ -30,24 +30,24 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.deepOrange,
-        title: Text('Home'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.switch_camera_rounded),
-            onPressed: () {
-              // Handle camera switch icon press
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.help),
-            onPressed: () {
-              // Handle help icon press
-            },
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.deepOrange,
+      //   title: Text('Home'),
+      //   // actions: [
+      //   //   IconButton(
+      //   //     icon: Icon(Icons.switch_camera_rounded),
+      //   //     onPressed: () {
+      //   //       // Handle camera switch icon press
+      //   //     },
+      //   //   ),
+      //   //   IconButton(
+      //   //     icon: Icon(Icons.help),
+      //   //     onPressed: () {
+      //   //       // Handle help icon press
+      //   //     },
+      //   //   ),
+      //   // ],
+      // ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(

@@ -52,7 +52,8 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
           faces, inputImage.metadata!.size, inputImage.metadata!.rotation);
       _customPaint = CustomPaint(painter: painter);
 
-      // to count the smiling face in camera
+
+      /// to count the smiling face in camera
       final int numSmilingFaces = faces.fold(0, (count, face) {
         if (face.smilingProbability != null && face.smilingProbability! > 0.5) {
           return count + 1;
@@ -60,7 +61,21 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
         return count;
       });
       print('Number of smiling faces: $numSmilingFaces');
-      // to count the smiling face in camera
+     /// Additional code for detecting the state of the right and left eyes
+      for (Face face in faces) {
+        String rightEyeState = 'Closed';
+        if (face.rightEyeOpenProbability != null &&
+            face.rightEyeOpenProbability! > 0.5) {
+          rightEyeState = 'Open';
+        }
+        String leftEyeState = 'Closed';
+        if (face.leftEyeOpenProbability != null &&
+            face.leftEyeOpenProbability! > 0.5) {
+          leftEyeState = 'Open';
+        }
+        print('Right eye state: $rightEyeState');
+        print('Left eye state: $leftEyeState');
+      }
 
     } else {
       String text = 'Faces found: ${faces.length}\n\n';

@@ -19,6 +19,8 @@ class FaceDetectorPainter extends CustomPainter {
       ..strokeWidth = 1.0
       ..color = Colors.green;
 
+
+
     for (final Face face in faces) {
       canvas.drawRect(
         Rect.fromLTRB(
