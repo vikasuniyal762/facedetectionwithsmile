@@ -59,40 +59,43 @@ class _CameraViewState extends State<CameraView> {
     } else {
     }
   }
-
   @override
   void dispose() {
     _stopLiveFeed();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.switch_camera_rounded),
+              onPressed: _floatingActionButton,
+            ),
+          ]
       ),
       body: _body(),
-      //floatingActionButton: _floatingActionButton(),
-      //floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  // Widget? _floatingActionButton() {
-  //   if (cameras.length == 1) return null;
-  //   return SizedBox(
-  //       height: 70.0,
-  //       width: 70.0,
-  //       child: FloatingActionButton(
-  //         onPressed: _switchLiveCamera,
-  //         child: Icon(
-  //           Platform.isIOS
-  //               ? Icons.flip_camera_ios_outlined
-  //               : Icons.flip_camera_android_outlined,
-  //           size: 40,
-  //         ),
-  //       ));
-  // }
+  Widget? _floatingActionButton() {
+    if (cameras.length == 1) return null;
+    return SizedBox(
+        height: 60.0,
+        width: 60.0,
+        child: FloatingActionButton(
+          onPressed: _switchLiveCamera,
+          child: Icon(
+            Platform.isIOS
+                ? Icons.flip_camera_ios_outlined
+                : Icons.flip_camera_ios_sharp,
+            size: 40,
+          ),
+        ));
+  }
 
   Widget _body() {
     return _liveFeedBody();
@@ -122,25 +125,6 @@ class _CameraViewState extends State<CameraView> {
             ),
           ),
           if (widget.customPaint != null) widget.customPaint!,
-          // Positioned(
-          //   bottom: 100,
-          //   left: 50,
-          //   right: 50,
-          //   child: Slider(
-          //     value: zoomLevel,
-          //     min: minZoomLevel,
-          //     max: maxZoomLevel,
-          //     onChanged: (newSliderValue) {
-          //       setState(() {
-          //         zoomLevel = newSliderValue;
-          //         _controller!.setZoomLevel(zoomLevel);
-          //       });
-          //     },
-          //     divisions: (maxZoomLevel - 1).toInt() < 1
-          //         ? null
-          //         : (maxZoomLevel - 1).toInt(),
-          //   ),
-          // )
         ],
       ),
     );
