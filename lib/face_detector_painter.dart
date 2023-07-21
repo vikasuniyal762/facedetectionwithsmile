@@ -1,9 +1,10 @@
-import 'dart:math';
-
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-
 import 'coordinates_translator.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class FaceDetectorPainter extends CustomPainter {
   FaceDetectorPainter(this.faces, this.absoluteImageSize, this.rotation);
@@ -13,7 +14,7 @@ class FaceDetectorPainter extends CustomPainter {
   final InputImageRotation rotation;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  Future<void> paint(Canvas canvas, Size size) async {
     final Paint paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
@@ -29,6 +30,33 @@ class FaceDetectorPainter extends CustomPainter {
               face.boundingBox.bottom, rotation, size, absoluteImageSize),
         ),
         paint,
+      );
+      final thumbnail = await VideoThumbnailGenerator.generateThumbnail('path/to/video');
+      final rect = ui.Rect.fromLTRB(
+        face.boundingBox.left,
+        face.boundingBox.top,
+        face.boundingBox.right,
+        face.boundingBox.bottom,
+      );
+      final croppedImage = await ImageCropper.cropImage(
+        imagePath: 'path/to/image',
+        aspectRatioPresets: [
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio16x9
+        ],
+        androidUiSettings: AndroidUiSettings(
+          toolbarTitle: 'Crop Image',
+          toolbarColor: Colors.deepOrange,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+        ),
+        iosUiSettings: IOSUiSettings(
+          title: 'Crop Image',
+        ),
       );
 
       // void paintContour(FaceContourType type) {
@@ -70,5 +98,65 @@ class FaceDetectorPainter extends CustomPainter {
   bool shouldRepaint(FaceDetectorPainter oldDelegate) {
     return oldDelegate.absoluteImageSize != absoluteImageSize ||
         oldDelegate.faces != faces;
+  }
+}
+
+class VideoThumbnailGenerator {
+  static Future<ui.Image> generateThumbnail(String videoPath) async {
+    final uint8list = await VideoThumbnail.thumbnailData(
+      video: videoPath,
+      imageFormat: ImageFormat.JPEG,
+      maxWidth: 128,
+      quality: 25,
+    );
+    final codec = await ui.instantiateImageCodec(uint8list!);
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
+}
+
+class ImageCropper {
+  static Future<String?> cropImage(
+      {String? imagePath,
+      required List<CropAspectRatioPreset> aspectRatioPresets,
+      required AndroidUiSettings androidUiSettings,
+      required IOSUiSettings iosUiSettings}
+      ) async {
+    final cropper = ImageCropper();
+    final croppedFile = await cropper._cropImage(
+        imagePath: imagePath,
+        aspectRatioPresets: [
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio16x9
+        ],
+        androidUiSettings: AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Colors.deepOrange,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false),
+        iosUiSettings:
+            IOSUiSettings(title: 'Crop Image', aspectRatioLockEnabled: false));
+    print("1###################################################################### $croppedFile");
+    return croppedFile;
+  }
+
+  Future<String?> _cropImage({
+    String? imagePath,
+    required List<CropAspectRatioPreset> aspectRatioPresets,
+    required AndroidUiSettings androidUiSettings,
+    required IOSUiSettings iosUiSettings,
+  }) async {
+    final croppedFile = await ImageCropper.cropImage(
+      imagePath: imagePath,
+      aspectRatioPresets: aspectRatioPresets,
+      androidUiSettings: androidUiSettings,
+      iosUiSettings: iosUiSettings,
+    );
+    print("2###################################################################### $croppedFile");
+    return croppedFile;
   }
 }

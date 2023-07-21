@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -19,15 +20,22 @@ class CameraView extends StatefulWidget {
   final Function(InputImage inputImage) onImage;
   final CameraLensDirection initialDirection;
 
+
   @override
   State<CameraView> createState() => _CameraViewState();
 }
 
 class _CameraViewState extends State<CameraView> {
+  final ValueNotifier<Duration> _durationNotifier = ValueNotifier(Duration.zero);
   CameraController? _controller;
   int _cameraIndex = -1;
   double zoomLevel = 0.0, minZoomLevel = 0.0, maxZoomLevel = 0.0;
   bool _changingCameraLens = false;
+  Timer? _timer;
+  bool _isRecording = false;
+  int _timerSeconds = 0;
+
+
 
   @override
   void initState() {
@@ -37,6 +45,7 @@ class _CameraViewState extends State<CameraView> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     _stopLiveFeed();
     super.dispose();
   }
@@ -46,15 +55,53 @@ class _CameraViewState extends State<CameraView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.switch_camera_rounded),
-            onPressed: _switchLiveCamera,
-          ),
-          IconButton(
-            icon: Icon(Icons.camera_outlined, size: 35, color: Colors.white),
-            onPressed: () {},
-          ),
+        actions:[
+          ElevatedButton(
+          onPressed: () async {
+    if (_isRecording) {
+    // Stop recording.
+    await _controller?.stopVideoRecording();
+    _timer?.cancel();
+    setState(() {
+    _isRecording = false;
+    _timerSeconds = 0;
+    });
+    } else {
+    // Start recording.
+    try {
+    await _controller?.startVideoRecording();
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    setState(() {
+    _timerSeconds++;
+    });
+    if (_timerSeconds >= 10) {
+    _timer?.cancel();
+    _controller?.stopVideoRecording();
+    setState(() {
+    _isRecording = false;
+    _timerSeconds = 0;
+    });
+    }
+    });
+    setState(() {
+    _isRecording = true;
+    });
+    } on CameraException catch (e) {
+    // Handle the camera exception.
+    print(e);
+    }
+    }
+    }, child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('$_timerSeconds seconds'),
+        TextButton(
+          onPressed: null,
+          child: _isRecording ? Text('Stop Recording') : Text('Start Recording'),
+        )
+  ]
+      ),
+    )
         ],
       ),
       body: _body(),
@@ -93,6 +140,7 @@ class _CameraViewState extends State<CameraView> {
       ),
     );
   }
+
 
   Future<void> _initializeCamera() async {
     final camera = cameras.firstWhere(

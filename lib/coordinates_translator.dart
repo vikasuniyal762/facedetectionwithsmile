@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 
 double translateX(
