@@ -1,20 +1,20 @@
-import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:image_cropper/image_cropper.dart';
+import 'dart:io'; // Import dart:io for File class
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import 'coordinates_translator.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:image_cropper/image_cropper.dart'; // Import image_cropper package
 
-class FaceDetectorPainter extends CustomPainter {
-  FaceDetectorPainter(this.faces, this.absoluteImageSize, this.rotation);
+class FaceDetectorPainter extends CustomPainter with ChangeNotifier {
+  FaceDetectorPainter(this.faces, this.absoluteImageSize, this.rotation, this.pathForImage);
 
   final List<Face> faces;
   final Size absoluteImageSize;
   final InputImageRotation rotation;
+  String pathForImage;
 
   @override
-  Future<void> paint(Canvas canvas, Size size) async {
+  void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
@@ -23,75 +23,51 @@ class FaceDetectorPainter extends CustomPainter {
     for (final Face face in faces) {
       canvas.drawRect(
         Rect.fromLTRB(
-          translateX(face.boundingBox.left, rotation, size, absoluteImageSize),
-          translateY(face.boundingBox.top, rotation, size, absoluteImageSize),
-          translateX(face.boundingBox.right, rotation, size, absoluteImageSize),
-          translateY(
-              face.boundingBox.bottom, rotation, size, absoluteImageSize),
+          face.boundingBox.left,
+          face.boundingBox.top,
+          face.boundingBox.right,
+          face.boundingBox.bottom,
         ),
         paint,
       );
-      final thumbnail = await VideoThumbnailGenerator.generateThumbnail('path/to/video');
-      final rect = ui.Rect.fromLTRB(
-        face.boundingBox.left,
-        face.boundingBox.top,
-        face.boundingBox.right,
-        face.boundingBox.bottom,
-      );
-      final croppedImage = await ImageCropper.cropImage(
-        imagePath: 'path/to/image',
-        aspectRatioPresets: [
-          CropAspectRatioPreset.square,
-          CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.ratio4x3,
-          CropAspectRatioPreset.ratio16x9
-        ],
-        androidUiSettings: AndroidUiSettings(
-          toolbarTitle: 'Crop Image',
-          toolbarColor: Colors.deepOrange,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-        ),
-        iosUiSettings: IOSUiSettings(
-          title: 'Crop Image',
-        ),
-      );
 
-      // void paintContour(FaceContourType type) {
-      //   final faceContour = face.contours[type];
-      //   if (faceContour?.points != null) {
-      //     for (final Point point in faceContour!.points) {
-      //       canvas.drawCircle(
-      //           Offset(
-      //             translateX(
-      //                 point.x.toDouble(), rotation, size, absoluteImageSize),
-      //             translateY(
-      //                 point.y.toDouble(), rotation, size, absoluteImageSize),
-      //           ),
-      //           1,
-      //           paint);
-      //     }
-      //   }
-      // }
-
-      // paintContour(FaceContourType.face);
-      // paintContour(FaceContourType.leftEyebrowTop);
-      // paintContour(FaceContourType.leftEyebrowBottom);
-      // paintContour(FaceContourType.rightEyebrowTop);
-      // paintContour(FaceContourType.rightEyebrowBottom);
-      // paintContour(FaceContourType.leftEye);
-      // paintContour(FaceContourType.rightEye);
-      // paintContour(FaceContourType.upperLipTop);
-      // paintContour(FaceContourType.upperLipBottom);
-      // paintContour(FaceContourType.lowerLipTop);
-      // paintContour(FaceContourType.lowerLipBottom);
-      // paintContour(FaceContourType.noseBridge);
-      // paintContour(FaceContourType.noseBottom);
-      // paintContour(FaceContourType.leftCheek);
-      // paintContour(FaceContourType.rightCheek);
+      if (pathForImage != null && File(pathForImage).existsSync()) {
+        _cropAndDrawFace(canvas, face);
+      }
     }
+  }
+
+  void _cropAndDrawFace(Canvas canvas, Face face) async {
+    final ui.Image image = await loadImage(pathForImage);
+    final double imageWidth = absoluteImageSize.width;
+    final double imageHeight = absoluteImageSize.height;
+    final double scaleX = size.width / imageWidth;
+    final double scaleY = size.height / imageHeight;
+
+    final Rect boundingBoxRect = Rect.fromLTRB(
+      face.boundingBox.left * scaleX,
+      face.boundingBox.top * scaleY,
+      face.boundingBox.right * scaleX,
+      face.boundingBox.bottom * scaleY,
+    );
+
+    final Rect canvasRect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    final ui.Rect cropRect = Rect.fromLTRB(
+      boundingBoxRect.left.clamp(0.0, size.width),
+      boundingBoxRect.top.clamp(0.0, size.height),
+      boundingBoxRect.right.clamp(0.0, size.width),
+      boundingBoxRect.bottom.clamp(0.0, size.height),
+    );
+
+    // Crop the image to the bounding box of the detected face
+    canvas.drawImageRect(image, cropRect, canvasRect, Paint());
+  }
+
+  Future<ui.Image> loadImage(String path) async {
+    final File imageFile = File(path);
+    final Uint8List imageBytes = await imageFile.readAsBytes();
+    return decodeImageFromList(imageBytes);
   }
 
   @override
@@ -101,62 +77,4 @@ class FaceDetectorPainter extends CustomPainter {
   }
 }
 
-class VideoThumbnailGenerator {
-  static Future<ui.Image> generateThumbnail(String videoPath) async {
-    final uint8list = await VideoThumbnail.thumbnailData(
-      video: videoPath,
-      imageFormat: ImageFormat.JPEG,
-      maxWidth: 128,
-      quality: 25,
-    );
-    final codec = await ui.instantiateImageCodec(uint8list!);
-    final frame = await codec.getNextFrame();
-    return frame.image;
-  }
-}
-
-class ImageCropper {
-  static Future<String?> cropImage(
-      {String? imagePath,
-      required List<CropAspectRatioPreset> aspectRatioPresets,
-      required AndroidUiSettings androidUiSettings,
-      required IOSUiSettings iosUiSettings}
-      ) async {
-    final cropper = ImageCropper();
-    final croppedFile = await cropper._cropImage(
-        imagePath: imagePath,
-        aspectRatioPresets: [
-          CropAspectRatioPreset.square,
-          CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.ratio4x3,
-          CropAspectRatioPreset.ratio16x9
-        ],
-        androidUiSettings: AndroidUiSettings(
-            toolbarTitle: 'Crop Image',
-            toolbarColor: Colors.deepOrange,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false),
-        iosUiSettings:
-            IOSUiSettings(title: 'Crop Image', aspectRatioLockEnabled: false));
-    print("1###################################################################### $croppedFile");
-    return croppedFile;
-  }
-
-  Future<String?> _cropImage({
-    String? imagePath,
-    required List<CropAspectRatioPreset> aspectRatioPresets,
-    required AndroidUiSettings androidUiSettings,
-    required IOSUiSettings iosUiSettings,
-  }) async {
-    final croppedFile = await ImageCropper.cropImage(
-      imagePath: imagePath,
-      aspectRatioPresets: aspectRatioPresets,
-      androidUiSettings: androidUiSettings,
-      iosUiSettings: iosUiSettings,
-    );
-    print("2###################################################################### $croppedFile");
-    return croppedFile;
-  }
-}
+// https://stackoverflow.com/questions/74937208/i-want-to-crop-the-camera-while-previewing-how-do-i-do-that

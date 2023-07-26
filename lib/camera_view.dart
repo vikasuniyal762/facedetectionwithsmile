@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
+import 'package:widgetstry/xFile.dart';
 
 import '../main.dart';
 
@@ -20,13 +21,13 @@ class CameraView extends StatefulWidget {
   final Function(InputImage inputImage) onImage;
   final CameraLensDirection initialDirection;
 
-
   @override
   State<CameraView> createState() => _CameraViewState();
 }
 
 class _CameraViewState extends State<CameraView> {
-  final ValueNotifier<Duration> _durationNotifier = ValueNotifier(Duration.zero);
+  final ValueNotifier<Duration> _durationNotifier =
+      ValueNotifier(Duration.zero);
   CameraController? _controller;
   int _cameraIndex = -1;
   double zoomLevel = 0.0, minZoomLevel = 0.0, maxZoomLevel = 0.0;
@@ -34,8 +35,6 @@ class _CameraViewState extends State<CameraView> {
   Timer? _timer;
   bool _isRecording = false;
   int _timerSeconds = 0;
-
-
 
   @override
   void initState() {
@@ -55,53 +54,60 @@ class _CameraViewState extends State<CameraView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        actions:[
+        actions: [
           ElevatedButton(
-          onPressed: () async {
-    if (_isRecording) {
-    // Stop recording.
-    await _controller?.stopVideoRecording();
-    _timer?.cancel();
-    setState(() {
-    _isRecording = false;
-    _timerSeconds = 0;
-    });
-    } else {
-    // Start recording.
-    try {
-    await _controller?.startVideoRecording();
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-    setState(() {
-    _timerSeconds++;
-    });
-    if (_timerSeconds >= 10) {
-    _timer?.cancel();
-    _controller?.stopVideoRecording();
-    setState(() {
-    _isRecording = false;
-    _timerSeconds = 0;
-    });
-    }
-    });
-    setState(() {
-    _isRecording = true;
-    });
-    } on CameraException catch (e) {
-    // Handle the camera exception.
-    print(e);
-    }
-    }
-    }, child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$_timerSeconds seconds'),
-        TextButton(
-          onPressed: null,
-          child: _isRecording ? Text('Stop Recording') : Text('Start Recording'),
-        )
-  ]
-      ),
-    )
+            onPressed: () async {
+              if (_isRecording) {
+                // Stop recording.
+
+                videoXFile = await _controller?.stopVideoRecording();
+                print("This is video file path ${videoXFile!.path}");
+                videoFile = File(videoXFile!.path);
+                print("This is video file $videoFile");
+                _timer?.cancel();
+
+                setState(() {
+
+                  _isRecording = false;
+                  _timerSeconds = 0;
+                });
+
+              } else {
+                // Start recording.
+                try {
+                  await _controller?.startVideoRecording();
+                  _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+                    setState(() {
+                      _timerSeconds++;
+                    });
+                    // if (_timerSeconds >= 3) {
+                    //   _timer?.cancel();
+                    //   _controller?.stopVideoRecording();
+                    //   setState(() {
+                    //     _isRecording = false;
+                    //     _timerSeconds = 0;
+                    //   });
+                    // }
+                  });
+                  setState(() {
+                    _isRecording = true;
+                  });
+                } on CameraException catch (e) {
+                  // Handle the camera exception.
+                  print(e);
+                }
+              }
+            },
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text('$_timerSeconds seconds'),
+              TextButton(
+                onPressed: null,
+                child: _isRecording
+                    ? Text('Stop Recording')
+                    : Text('Start Recording'),
+              )
+            ]),
+          )
         ],
       ),
       body: _body(),
@@ -130,8 +136,8 @@ class _CameraViewState extends State<CameraView> {
             child: Center(
               child: _changingCameraLens
                   ? Center(
-                child: const Text('Changing camera lens'),
-              )
+                      child: const Text('Changing camera lens'),
+                    )
                   : CameraPreview(_controller!),
             ),
           ),
@@ -141,14 +147,13 @@ class _CameraViewState extends State<CameraView> {
     );
   }
 
-
   Future<void> _initializeCamera() async {
     final camera = cameras.firstWhere(
-          (element) =>
-      element.lensDirection == widget.initialDirection &&
+      (element) =>
+          element.lensDirection == widget.initialDirection &&
           element.sensorOrientation == 90,
       orElse: () => cameras.firstWhere(
-            (element) => element.lensDirection == widget.initialDirection,
+        (element) => element.lensDirection == widget.initialDirection,
         orElse: () => cameras.first,
       ),
     );
@@ -192,7 +197,6 @@ class _CameraViewState extends State<CameraView> {
     setState(() => _changingCameraLens = false);
   }
 
-
   ///count the frames .....
   int count = 0;
   void _processCameraImage(CameraImage image) {
@@ -209,7 +213,8 @@ class _CameraViewState extends State<CameraView> {
 
   InputImage? _inputImageFromCameraImage(CameraImage image) {
     final camera = cameras[_cameraIndex];
-    final rotation = InputImageRotationValue.fromRawValue(camera.sensorOrientation);
+    final rotation =
+        InputImageRotationValue.fromRawValue(camera.sensorOrientation);
     if (rotation == null) return null;
 
     final format = InputImageFormatValue.fromRawValue(image.format.raw);

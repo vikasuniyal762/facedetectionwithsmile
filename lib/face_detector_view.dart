@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:widgetstry/xFile.dart';
 import 'face_detector_painter.dart';
 import 'camera_view.dart';
 //import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
@@ -14,7 +15,7 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
     options: FaceDetectorOptions(
       enableLandmarks: true,
      //enableContours: true,
-     enableClassification: true,
+     enableClassification: false,
     ),
   );
   bool _canProcess = true; //use to control the processing flow prevent multiple simultaneous image processing.
@@ -52,7 +53,7 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
       final painter = FaceDetectorPainter(
-          faces, inputImage.metadata!.size, inputImage.metadata!.rotation);
+          faces,inputImage.metadata!.size, inputImage.metadata!.rotation, pathForImage);
       _customPaint = CustomPaint(painter: painter);
       /// to count the smiling face in camera
       final int numSmilingFaces = faces.fold(0, (count, face) {
